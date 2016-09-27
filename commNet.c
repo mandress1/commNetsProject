@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
 {
     int mysockfd;
     int recvlen;
+    int i;
     struct sockaddr_in my_addr;     // This computers address
     struct sockaddr_in serv_addr;   // Servers address
     struct hostent* hp;             // Getting from dns
@@ -66,13 +67,19 @@ int main(int argc, char* argv[])
     serv_addr.sin_family = AF_INET;                     // IPV4
     serv_addr.sin_port = SCHED_PORT;                    // Port ScheduleServer Listening on 23510
 
-    hp = gethostbyname(SCHED_NAME);                     // Getting host by given name for ScheduleServer
+    hp = gethostbyname("c-lnx001.engr.uiowa.edu");                     // Getting host by given name for ScheduleServer
+    //hp = gethostbyaddr("128.255.17.148");
     if (!hp)
     {
         printf("Error: couldn't get server address\n");
         return 4;
     }
-    printf("Host found by name. Setting up socket...\n");
+    printf("Host found by name. List of returned IPS:\n"); 
+    for(i = 0; hp->h_addr_list[i] != 0;i++)
+    {
+        printf("%d.%d.%d.%d\n", hp->h_addr_list[i][0], hp->h_addr_list[i][1], hp->h_addr_list[i][2], hp->h_addr_list[i][3]);
+    }
+    printf(" Setting up socket...\n");
     memcpy((void*)&serv_addr.sin_addr, hp->h_addr_list[0], hp->h_length);
     printf("Server socket settup. Wooo!\n");
     /* Server connected. time to communicate with it */
@@ -80,7 +87,7 @@ int main(int argc, char* argv[])
     /*starting communications */
     char* tstmsg = "mandress Iowa";
     
-    printf("Attempting to send message...");
+    printf("Attempting to send message: %s...\n", tstmsg);
     if (sendto(mysockfd, tstmsg, strlen(tstmsg), 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
     {
         printf("Sending message failed. boo you\n");\
@@ -89,17 +96,13 @@ int main(int argc, char* argv[])
     printf("Message send successfully!\n");
 
     printf("Attempting to get response...\n");
-    for(;;)
+    recvlen = recvfrom(mysockfd, buff, SIZE, 0, (struct sockaddr*)&serv_addr, &serv_addr_len);
+    printf("Recieved %d bytes from server\n", recvlen);
+    if(recvlen > 0)
     {
-        recvlen = recvfrom(mysockfd, buff, SIZE, 0, (struct sockaddr*)&serv_addr, &serv_addr_len);
-        printf("Recieved %d bytes from server\n", recvlen);
-        if(recvlen > 0)
-        {
-            buff[recvlen] = '\0';
-            printf("Message recevied: \"%s\"\n", buff);
-            return 0;
-        }
+        buff[recvlen] = '\0';
+        printf("Message recevied: \"%s\"\n", buff);
     }
-
+    
     return 0;
 }
