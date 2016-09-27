@@ -12,7 +12,9 @@
 
 int main(int argc, char* argv[])
 {
-    char* hawkid;
-    
+    char* hawkid = argv[1];
+
+    printf("Hawkid: %s\n", hawkid);
+
     return 0;
 }
