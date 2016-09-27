@@ -12,9 +12,18 @@
 
 int main(int argc, char* argv[])
 {
-    char* hawkid = argv[1];
+    char* hawkid;
 
-    printf("Hawkid: %s\n", hawkid);
+    if (argc == 2)
+    {
+        hawkid = argv[1];
+        printf("Hawkid: %s\n", hawkid);
+    }
+    else
+    {
+        printf("Error: Incorrect number of arguments supplied\n");
+        return -1;
+    }
 
     return 0;
 }
