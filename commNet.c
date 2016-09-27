@@ -18,9 +18,11 @@ const char* WEATH_NAME = "c-lnx000.engr.uiowa.edu";
 int main(int argc, char* argv[])
 {
     int mysockfd;
+    int recvlen;
     struct sockaddr_in my_addr;     // This computers address
     struct sockaddr_in serv_addr;   // Servers address
-    struct hostent* hp;             // Getting from dns 
+    struct hostent* hp;             // Getting from dns
+    socklen_t serv_addr_len = sizeof(serv_addr); 
     char* hawkid;
 
     if (argc == 2)
@@ -73,6 +75,31 @@ int main(int argc, char* argv[])
     printf("Host found by name. Setting up socket...\n");
     memcpy((void*)&serv_addr.sin_addr, hp->h_addr_list[0], hp->h_length);
     printf("Server socket settup. Wooo!\n");
+    /* Server connected. time to communicate with it */
+
+    /*starting communications */
+    char* tstmsg = "mandress Iowa";
+    
+    printf("Attempting to send message...");
+    if (sendto(mysockfd, tstmsg, strlen(tstmsg), 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Sending message failed. boo you\n");\
+        return 5;
+    }
+    printf("Message send successfully!\n");
+
+    printf("Attempting to get response...\n");
+    for(;;)
+    {
+        recvlen = recvfrom(mysockfd, buff, SIZE, 0, (struct sockaddr*)&serv_addr, &serv_addr_len);
+        printf("Recieved %d bytes from server\n", recvlen);
+        if(recvlen > 0)
+        {
+            buff[recvlen] = '\0';
+            printf("Message recevied: \"%s\"\n", buff);
+            return 0;
+        }
+    }
 
     return 0;
 }
