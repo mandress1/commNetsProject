@@ -52,6 +52,13 @@ int main(void)
     buff[nread] = '\0';
     printf("Response: %s\n", buff);
 
+    printf("Attemping to send data: %s\n", tstmsg);
+    write(sockfd, tstmsg, sizeof(tstmsg));
+    printf("Message sent\nAttempting to get response\n");
+    nread = read(sockfd, buff, SIZE);
+    buff[nread] = '\0';
+    printf("Response: %s\n", buff);
+
     close(sockfd);
     return 0;
 }
