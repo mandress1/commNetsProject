@@ -27,10 +27,27 @@ int main(int argc, char* argv[])
 
     if (argc < 2)
     {
-        printf("Error: not enough arguments supplied.\nUsage: `./<executable_name>.exe <hawkid>\n");
+        perror("Error: not enough arguments supplied.\nUsage: `./<executable_name>.exe <hawkid>\n");
         exit(-1);
     }
 
+    hawkid = argv[1];
+
+    /* setting udp first ScheduleServer */
+    printf("Setting up socket for UDP connection\n");
+    if ((schedfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+        perror("Error: could not open socket for ScheduleServer\n");
+        exit(1);
+    }
+    printf("Socket opened for ScheduleServer\n");
+    h = gethostbyname(SCHED_NAME);                              // Getting schedule server address
+    schedAddr.sin_family = AF_INET;                             // IPV4 woot woot
+    schedAddr.sin_port = htons(SCHED_PORT);                     // Look up top for it
+    bcopy(h->h_addr, (char*)&schedAddr.sin_addr, h->h_length);  // Telling socket address to listen for
+    printf("ScheduleServer socket set up\n");
+
+    
 
     return 0;
 }
