@@ -17,92 +17,47 @@ const char* WEATH_NAME = "c-lnx000.engr.uiowa.edu";
 
 int main(int argc, char* argv[])
 {
-    int mysockfd;
-    int recvlen;
-    int i;
-    struct sockaddr_in my_addr;     // This computers address
-    struct sockaddr_in serv_addr;   // Servers address
-    struct hostent* hp;             // Getting from dns
-    socklen_t serv_addr_len = sizeof(serv_addr); 
-    char* hawkid;
+    int sockfd;
+    int nread;
+    struct sockaddr_in servAddr;
+    struct hostent *h;
+    char* tstmsg = "mandress Iowa";
 
-    if (argc == 2)
+    printf("Trying to get socket\n");
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        hawkid = argv[1];
-        printf("Hawkid: %s\n", hawkid);
-    }
-    else
-    {
-        printf("Error: Incorrect number of arguments supplied\n");
-        return -1;
-    }
-
-    /* Setting up socket for this computer */
-    printf("Trying to open socket on this computer\n");
-    if ((mysockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-        perror("Unable to open socket for ScheduleServer\n");
-        return 2;
+        printf("Error: unable to obtain socket\n");
+        exit(1);
     }
     printf("Socket opened\n");
 
-    // Following this example https://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
-    memset((char*)&my_addr, 0, sizeof(my_addr));    // Setting address to 0s to be initialized
-    my_addr.sin_family = AF_INET;                   // Good old fashioned IPV4
-    my_addr.sin_addr.s_addr = htonl(INADDR_ANY);    // Telling the OS to grab the address. htonl converts long int into network representation
-    my_addr.sin_port = htons(0);                    // Telling OS to pick an open port. htons converts short int to network represntation
+    printf("Setting up server shit\n");
+    h = gethostbyname(SCHED_NAME);
+    servAddr.sin_family = AF_INET;
+    servAddr.sin_port = htons(SCHED_PORT);
+    bcopy(h->h_addr, (char*)&servAddr.sin_addr, h->h_length);
 
-    //testing to maa=ke sure port is working
-    printf("Attempting to bind socket on this machine...\n");
-    if (bind(mysockfd, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0)
+    printf("Server connection should be set up. Attempting to communicate\n");
+    printf("Sending: %s\n", tstmsg);
+    if (sendto(sockfd, tstmsg, sizeof(tstmsg), 0, (struct sockaddr*)&servAddr, sizeof(servAddr)) < 0)
     {
-        printf("Error: unable to bind failed\n");
-        return 3;
+        printf("Error: message failed to send\n");
+        exit(2);
     }
-    printf("Bind successful\n");
-    /* Socket opened and bound to connect to server */
+    printf("Message sent\n");
 
-    /* Opening socket to ScheduleServer now */
-    memset((char*)&serv_addr, 0, sizeof(serv_addr));    // Setting server address to 0  to be setup later
-    serv_addr.sin_family = AF_INET;                     // IPV4
-    serv_addr.sin_port = SCHED_PORT;                    // Port ScheduleServer Listening on 23510
+    printf("Attempting to get response\n");
+    socklen_t addrlen = sizeof(servAddr);
+    if((nread = recvfrom(sockfd, buff, SIZE, 0, (struct sockaddr*)&servAddr, &addrlen)) < 0)
+    {
+        printf("Error: message recieve failed\n");
+        exit(3);
+    }
+    buff[nread] = '\0';
 
-    hp = gethostbyname("c-lnx001.engr.uiowa.edu");                     // Getting host by given name for ScheduleServer
-    //hp = gethostbyaddr("128.255.17.148");
-    if (!hp)
-    {
-        printf("Error: couldn't get server address\n");
-        return 4;
-    }
-    printf("Host found by name. List of returned IPS:\n"); 
-    for(i = 0; hp->h_addr_list[i] != 0;i++)
-    {
-        printf("%d.%d.%d.%d\n", hp->h_addr_list[i][0], hp->h_addr_list[i][1], hp->h_addr_list[i][2], hp->h_addr_list[i][3]);
-    }
-    printf(" Setting up socket...\n");
-    memcpy((void*)&serv_addr.sin_addr, hp->h_addr, hp->h_length);
-    printf("Server socket settup. Wooo!\n");
-    /* Server connected. time to communicate with it */
+    printf("Response: %s\n", buff);
 
-    /*starting communications */
-    char* tstmsg = "mandress Iowa";
-    
-    printf("Attempting to send message: %s...\n", tstmsg);
-    if (sendto(mysockfd, tstmsg, strlen(tstmsg), 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        printf("Sending message failed. boo you\n");\
-        return 5;
-    }
-    printf("Message send successfully!\n");
+    close(sockfd);
 
-    printf("Attempting to get response...\n");
-    recvlen = recvfrom(mysockfd, buff, SIZE, 0, (struct sockaddr*)&serv_addr, &serv_addr_len);
-    printf("Recieved %d bytes from server\n", recvlen);
-    if(recvlen > 0)
-    {
-        buff[recvlen] = '\0';
-        printf("Message recevied: \"%s\"\n", buff);
-    }
-    
     return 0;
 }
