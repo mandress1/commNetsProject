@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
         printf("%d.%d.%d.%d\n", hp->h_addr_list[i][0], hp->h_addr_list[i][1], hp->h_addr_list[i][2], hp->h_addr_list[i][3]);
     }
     printf(" Setting up socket...\n");
-    memcpy((void*)&serv_addr.sin_addr, hp->h_addr_list[0], hp->h_length);
+    memcpy((void*)&serv_addr.sin_addr, hp->h_addr, hp->h_length);
     printf("Server socket settup. Wooo!\n");
     /* Server connected. time to communicate with it */
 
