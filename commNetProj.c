@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
 {
     int schedfd;                    // ScheduleServer socket file descriptor
     int weathfd;                    // WeatherServer socket file descriptor
+    int nread;
     struct hostent* h;              // Used for getting servers
     struct sockaddr_in schedAddr;   // Socket for ScheduleServer
     struct sockaddr_in weathAddr;   // Socket for WeatherServer
@@ -41,13 +42,52 @@ int main(int argc, char* argv[])
         exit(1);
     }
     printf("Socket opened for ScheduleServer\n");
-    h = gethostbyname(SCHED_NAME);                              // Getting schedule server address
+    h = gethostbyname(SCHED_NAME);                              // Getting ScheduleServer address
     schedAddr.sin_family = AF_INET;                             // IPV4 woot woot
     schedAddr.sin_port = htons(SCHED_PORT);                     // Look up top for it
     bcopy(h->h_addr, (char*)&schedAddr.sin_addr, h->h_length);  // Telling socket address to listen for
     printf("ScheduleServer socket set up\n");
 
-    
+    /* setting up WeatherServer */
+    printf("Setting up socket for TCP connection\n");
+    if((weathfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        perror("Error: could not open socket fo WeatherServer\n");
+        exit(2);
+    }
+    printf("Socket opened for WeatherServer\n");
+    h = gethostbyname(WEATH_NAME);                              // Getting WeatherServer address
+    weathAddr.sin_family = AF_INET;                             // IPV4
+    weathAddr.sin_port = htons(WEATH_PORT);                     // at the top
+    bcopy(h->h_addr, (char*)&weathAddr.sin_addr, h->h_length);  // copy address
+    printf("WeatherServer socket set up\nTrying to connect\n");
+    if(connect(weathfd, (struct sockaddr*)&weathAddr, sizeof(weathAddr)) < 0)
+    {
+        perror("Couldn't set up connection to WeatherServer\n");
+        exit(3);
+    }
+    printf("Connection made to WeatherServer\n");
+
+    /* sending messages */
+    printf("Sending mandress Iowa to ScheduleServer\n");
+    if(sendto(schedfd, "mandress Iowa", sizeof("mandress Iowa"), 0, (struct sockaddr*)&schedAddr, sizeof(schedAddr)) < 0)
+    {
+        perror("Error: failed to send message to ScheduleServer\n");
+        exit(4);
+    }
+    printf("Message sent\nGetting response\n");
+    socklen_t addrlen = sizeof(schedAddr);
+    if((nread = recvfrom(schedfd, buff, SIZE, 0, (struct sockaddr*)&schedAddr, &addrlen)) < 0)
+    {
+        perror("Error: failed to get response from server\n");
+        exit(5);
+    }
+    buff[nread] = '\0';
+
+    printf("response: %s\n", buff);
+    close(weathfd);
+    close(schedfd);
+
 
     return 0;
 }
