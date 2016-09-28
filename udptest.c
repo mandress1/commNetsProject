@@ -57,6 +57,24 @@ int main(int argc, char* argv[])
 
     printf("Response: %s\n", buff);
 
+    printf("Sending: %s\n", tstmsg);
+    if (sendto(sockfd, tstmsg, sizeof(tstmsg), 0, (struct sockaddr*)&servAddr, sizeof(servAddr)) < 0)
+    {
+        printf("Error: message failed to send\n");
+        exit(2);
+    }
+    printf("Message sent\n");
+
+    printf("Attempting to get response\n");
+    if((nread = recvfrom(sockfd, buff, SIZE, 0, (struct sockaddr*)&servAddr, &addrlen)) < 0)
+    {
+        printf("Error: message recieve failed\n");
+        exit(3);
+    }
+    buff[nread] = '\0';
+
+    printf("Response: %s\n", buff);
+
     close(sockfd);
 
     return 0;
