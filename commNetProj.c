@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     char* hawkid;
     char* msgToSend;
 
-    if (argc < 2)
+    if(argc < 2)
     {
         perror("Error: not enough arguments supplied.\nUsage: `./<executable_name>.exe <hawkid>\n");
         exit(-1);
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 
     /* setting udp first ScheduleServer */
     printf("Setting up socket for UDP connection\n");
-    if ((schedfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    if((schedfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
         perror("Error: could not open socket for ScheduleServer\n");
         exit(1);
@@ -83,8 +83,16 @@ int main(int argc, char* argv[])
         exit(5);
     }
     buff[nread] = '\0';
+        printf("response: %s\n", buff);
 
-    printf("response: %s\n", buff);
+    printf("Sending mandress to WeatherServer\n");
+    write(weathfd, "mandress", sizeof("mandress"));
+    printf("Messgae sent\n");
+    nread = read(weathfd, buff, SIZE);
+    buff[nread] = '\0';
+    printf("WeatherServer response: %s\n", buff);
+
+
     close(weathfd);
     close(schedfd);
 
