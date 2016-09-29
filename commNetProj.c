@@ -22,19 +22,20 @@ int min(int one, int two);
 int isValidSchoolName(const char* schoolName, const char* validSchools[], int confSize);
 int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName, int hostPort);
 char* remNull(char* str);
-char* prepMessage(const char* part1, const char* optPart2);
 
 int main(int argc, char* argv[])
 {
+    int i;
     int schedfd;                    // ScheduleServer socket file descriptor
     int weathfd;                    // WeatherServer socket file descriptor
     int nread;
     struct sockaddr_in schedAddr;   // Socket for ScheduleServer
     struct sockaddr_in weathAddr;   // Socket for WeatherServer
+    socklen_t schedLen;
     char* hawkid;
-    char* usrInput;
-    char* msgToSend;
+    char* usrInput = (char*)malloc(BUFF_SIZE*sizeof(char));
     char* respBuff = (char*)malloc(BUFF_SIZE*sizeof(char));
+    char* outBuff = (char*)malloc(BUFF_SIZE*sizeof(char));
 
     if(argc < 2)
     {
@@ -47,6 +48,7 @@ int main(int argc, char* argv[])
     /* setting udp first ScheduleServer */
     printf("Setting up socket for UDP connection\n");
     schedfd = setUpConnection(&schedAddr, SOCK_DGRAM, SCHED_NAME, SCHED_PORT);
+    schedLen = sizeof(schedAddr);
     printf("ScheduleServer socket set up\n");
 
     /* setting up WeatherServer */
@@ -60,7 +62,7 @@ int main(int argc, char* argv[])
     respBuff[nread] = '\0';
     printf("WeatherServer says: '%s'\n", respBuff);
 
-    /*
+    
     do
     {
         printf("Enter a School name for weather forcast or \"quit\" to exit\nEntry: ");
@@ -69,7 +71,33 @@ int main(int argc, char* argv[])
         if(isValidSchoolName(usrInput, SCHOOLS, CONF_SIZE))
         {
             // send <hawkid> <schoolName> to ScheduleServer
+            int idLen = strlen(hawkid), j;
+            int inLen = strlen(usrInput);
+            int totLen = idLen + inLen + 1;
+            for(i = 0;i < idLen;i++)
+            {
+                outBuff[i] = hawkid[i];
+            }
+            printf("wow\n");
+            outBuff[idLen] = ' ';
+            for(i = 0;i < inLen;i++)
+            {
+                outBuff[idLen + i + 1] = usrInput[i];
+            }
+            sendto(schedfd, outBuff, totLen, 0, (struct sockaddr*)&schedAddr, sizeof(schedAddr));
+            outBuff[totLen] = '\0';
+            printf("'%s' sent to ScheduleServer\n", outBuff);
+
             // get <away>@<home> <3 letter code>
+            nread = recvfrom(schedfd, respBuff, BUFF_SIZE, 0, (struct sockaddr*)&schedAddr, &schedLen);
+            respBuff[nread] = '\0';
+            printf("ScheduleServer says: '%s\n", respBuff);
+            for(i = strlen(respBuff)- 3,j = 0;i < strlen(respBuff);i++, j++)
+            {
+                outBuff[j] = respBuff[i];
+            }
+            outBuff[j] = '\0';
+            printf("3 letter code: %s\n", outBuff);
             // send <3 letter code> to WeatherServer
             // print weather server response
         }
@@ -83,7 +111,9 @@ int main(int argc, char* argv[])
             // tell user they're dumb
         }
     }while(strncmp(usrInput, "quit", min(strlen(usrInput), strlen("quit"))));
-    */
+    
+
+
     close(weathfd);
     close(schedfd);
     return 0;
@@ -152,17 +182,53 @@ int min(int one, int two)
 char* remNull(char* str)
 {
     int ogLen = strlen(str), i;
-    char* newStr = (char*)malloc(ogLen*sizeof(char));
 
-    for(i = 0;i < ogLen;i++)
+    if(str[ogLen] != '\0')
     {
-        newStr[i] = str[i];
+        char* newStr = (char*)malloc(ogLen*sizeof(char));
+
+        for(i = 0;i < ogLen;i++)
+        {
+            newStr[i] = str[i];
+        }
+
+        return newStr;  
     }
-
-    return newStr;
+    else
+    {
+        return str;
+    }
 }
 
-char* prepMessage(const char* part1, const char* optPart2)
+/*void prepMessage(char* buff, char* part1, char* optPart2)
 {
+    int i;
+    if(optPart2 == NULL)
+    {
+        char* tmp = remNull(part1);
+        for(i = 0;i < strlen(tmp);i++)
+        {
+            buff[i] = tmp[i];
+        }
+        free(tmp);
+    }
+    else
+    {
+        char* tmp1 = remNull(part1);
+        char* tmp2 = remNull(optPart2);
+        int len1 = strlen(tmp1);
+        int len2 = strlen(tmp2);
 
-}
+        for(i = 0;i < len1;i++)
+        {
+            buff[i] = tmp1[i];
+        }
+        buff[len1] = ' ';
+        for(i = 0;i < len2;i++)
+        {
+            buff[len1+i+1] = tmp2[i];
+        }
+        free(tmp1);
+        free(tmp2);
+    }
+}*/
