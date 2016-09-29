@@ -8,7 +8,8 @@
 #include <netinet/in.h>
 
 #define CONF_SIZE 14
-#define BUFF_SIZE 1024      // buffer size
+#define OUT_BUFF_SIZE 256
+#define IN_BUFF_SIZE 16384     // buffer size
 #define SCHED_PORT 23510    // ScheduleServer port. host: c-lnx001.engr.uiowa.edu
 #define WEATH_PORT 23511    // WeatherServer port. host: c-lnx000.engr.uiowa.edu
 
@@ -32,9 +33,9 @@ int main(int argc, char* argv[])
     struct sockaddr_in weathAddr;   // Socket for WeatherServer
     socklen_t schedLen;
     char* hawkid;
-    char* usrInput = (char*)malloc(BUFF_SIZE*sizeof(char));
-    char* respBuff = (char*)malloc(BUFF_SIZE*sizeof(char));
-    char* outBuff = (char*)malloc(BUFF_SIZE*sizeof(char));
+    char* respBuff = (char*)malloc(IN_BUFF_SIZE*sizeof(char));
+    char* outBuff = (char*)malloc(OUT_BUFF_SIZE*sizeof(char));
+    char* usrInput = (char*)malloc(OUT_BUFF_SIZE*sizeof(char));
 
     if(argc < 2)
     {
@@ -57,7 +58,7 @@ int main(int argc, char* argv[])
 
     write(weathfd, remNull(hawkid), sizeof(hawkid));
     printf("'%s' sent to WeatherServer\n", argv[1]);
-    nread = read(weathfd, respBuff, BUFF_SIZE);
+    nread = read(weathfd, respBuff, IN_BUFF_SIZE);
     respBuff[nread] = '\0';
     printf("WeatherServer says: '%s'\n", respBuff);
 
@@ -89,7 +90,7 @@ int main(int argc, char* argv[])
             printf("'%s' sent to ScheduleServer\n", outBuff);
 
             // get <away>@<home> <3 letter code>
-            nread = recvfrom(schedfd, respBuff, BUFF_SIZE, 0, (struct sockaddr*)&schedAddr, &schedLen);
+            nread = recvfrom(schedfd, respBuff, IN_BUFF_SIZE, 0, (struct sockaddr*)&schedAddr, &schedLen);
             respBuff[nread] = '\0';
             printf("ScheduleServer says: '%s\n", respBuff);
             for(i = strlen(respBuff)- 3,j = 0;i < strlen(respBuff);i++, j++)
@@ -100,10 +101,10 @@ int main(int argc, char* argv[])
             // send <3 letter code> to WeatherServer
             write(weathfd, outBuff, j);
             outBuff[j] = '\0';
-            printf("'%s sent to WeatherServer'\n", outBuff);
+            printf("'%s' sent to WeatherServer\n", outBuff);
 
             // print weather server response
-            nread = read(weathfd, respBuff, BUFF_SIZE);
+            nread = read(weathfd, respBuff, IN_BUFF_SIZE);
             respBuff[nread] = '\0';
             printf("WeatherServer says: %s\n", respBuff);
         }
@@ -113,7 +114,7 @@ int main(int argc, char* argv[])
             write(weathfd, remNull(usrInput), sizeof(remNull(usrInput)));
             printf("'%s' sent to WeatherServer\n", usrInput);
             // tell user goodby
-            nread = read(weathfd, respBuff, BUFF_SIZE);
+            nread = read(weathfd, respBuff, IN_BUFF_SIZE);
             respBuff[nread] = '\0';
 
             printf("WeatherServer says: '%s'\nNow exiting the program\n", respBuff);
@@ -211,36 +212,3 @@ char* remNull(char* str)
         return str;
     }
 }
-
-/*void prepMessage(char* buff, char* part1, char* optPart2)
-{
-    int i;
-    if(optPart2 == NULL)
-    {
-        char* tmp = remNull(part1);
-        for(i = 0;i < strlen(tmp);i++)
-        {
-            buff[i] = tmp[i];
-        }
-        free(tmp);
-    }
-    else
-    {
-        char* tmp1 = remNull(part1);
-        char* tmp2 = remNull(optPart2);
-        int len1 = strlen(tmp1);
-        int len2 = strlen(tmp2);
-
-        for(i = 0;i < len1;i++)
-        {
-            buff[i] = tmp1[i];
-        }
-        buff[len1] = ' ';
-        for(i = 0;i < len2;i++)
-        {
-            buff[len1+i+1] = tmp2[i];
-        }
-        free(tmp1);
-        free(tmp2);
-    }
-}*/
