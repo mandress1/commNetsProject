@@ -25,7 +25,6 @@ char* remNull(char* str);
 
 int main(int argc, char* argv[])
 {
-    int i;
     int schedfd;                    // ScheduleServer socket file descriptor
     int weathfd;                    // WeatherServer socket file descriptor
     int nread;
@@ -71,7 +70,8 @@ int main(int argc, char* argv[])
         if(isValidSchoolName(usrInput, SCHOOLS, CONF_SIZE))
         {
             // send <hawkid> <schoolName> to ScheduleServer
-            int idLen = strlen(hawkid), j;
+            int i, j;
+            int idLen = strlen(hawkid);
             int inLen = strlen(usrInput);
             int totLen = idLen + inLen + 1;
             for(i = 0;i < idLen;i++)
@@ -96,19 +96,31 @@ int main(int argc, char* argv[])
             {
                 outBuff[j] = respBuff[i];
             }
-            outBuff[j] = '\0';
-            printf("3 letter code: %s\n", outBuff);
+            
             // send <3 letter code> to WeatherServer
+            write(weathfd, outBuff, j);
+            outBuff[j] = '\0';
+            printf("'%s sent to WeatherServer'\n", outBuff);
+
             // print weather server response
+            nread = read(weathfd, respBuff, BUFF_SIZE);
+            respBuff[nread] = '\0';
+            printf("WeatherServer says: %s\n", respBuff);
         }
         else if(strncmp(usrInput, "quit", min(strlen(usrInput), strlen("quit"))) == 0)
         {
             // send quit to WeatherServer
+            write(weathfd, remNull(usrInput), sizeof(remNull(usrInput)));
+            printf("'%s' sent to WeatherServer\n", usrInput);
             // tell user goodby
+            nread = read(weathfd, respBuff, BUFF_SIZE);
+            respBuff[nread] = '\0';
+
+            printf("WeatherServer says: '%s'\nNow exiting the program\n", respBuff);
         }
         else
         {
-            // tell user they're dumb
+            printf("Error: input nor recognized.\nAll spaces must be underscores ('_') and school names must be correctly capitalized\n");
         }
     }while(strncmp(usrInput, "quit", min(strlen(usrInput), strlen("quit"))));
     
