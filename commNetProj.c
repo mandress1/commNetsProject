@@ -7,14 +7,17 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#define SIZE 1024           // buffer size
+#define CONF_SIZE 14
+#define BUFF_SIZE 1024      // buffer size
 #define SCHED_PORT 23510    // ScheduleServer port. host: c-lnx001.engr.uiowa.edu
 #define WEATH_PORT 23511    // WeatherServer port. host: c-lnx000.engr.uiowa.edu
 
 const char* SCHED_NAME = "c-lnx001.engr.uiowa.edu";
 const char* WEATH_NAME = "c-lnx000.engr.uiowa.edu";
+const char* SCHOOLS[] = {"Michigan","Indiana","Illinois","Maryland","Ohio_State","Northwestern","Iowa","Purdue","Michigan_State","Nebraska","Wisconsin","Minnesota","Rutgers","Penn_State"};
 
-int isValidSchoolName(const char* schoolName);
+int min(int one, int two);
+int isValidSchoolName(const char* schoolName, const char* validSchools[], int confSize);
 int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName, int hostPort);
 
 int main(int argc, char* argv[])
@@ -27,7 +30,7 @@ int main(int argc, char* argv[])
     char* hawkid;
     char* usrInput;
     char* msgToSend;
-    char* respBuff = (char*)malloc(SIZE*sizeof(char));
+    char* respBuff = (char*)malloc(BUFF_SIZE*sizeof(char));
 
     if(argc < 2)
     {
@@ -50,6 +53,13 @@ int main(int argc, char* argv[])
     do
     {
         printf("Enter a School name for weather forcast or \"quit\" to exit\nEntry: ");
+        scanf("%s", usrInput);
+
+        if(isValidSchoolName(usrInput, SCHOOLS, CONF_SIZE))
+        {
+
+        }
+        else if (strncmp(usrInput, "quit", ))
 
     }while(strncmp(usrInput, "quit", strlen("quit")));
 
@@ -99,7 +109,21 @@ int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName,
     return fd;
 }
 
-int isValidSchoolName(const char* schoolName)
+int isValidSchoolName(const char* schoolName, const char* validSchools[], int confSize)
 {
-    
+    int i, nToCmp;
+    for(i = 0;i < confSize;i++)
+    {
+        nToCmp = min(strlen(schoolName), strlen(validSchools[i]));
+        if(strncmp(schoolName, validSchools[i], nToCmp) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int min(int one, int two)
+{
+    return (one < two)?(one):(two);
 }
