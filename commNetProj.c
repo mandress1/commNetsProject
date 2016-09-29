@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-int setUpConnection(struct sockaddr_in* toSetUp, int* fd, int mode, char* hostName, int hostPort)
+int setUpConnection(struct sockaddr_in* toSetUp, int mode, char* hostName, int hostPort)
 {
 	int fd = 0;
 	struct hostent* remHost;
@@ -116,7 +116,7 @@ int setUpConnection(struct sockaddr_in* toSetUp, int* fd, int mode, char* hostNa
 		remHost = gethostbyname(hostName);
 		toSetUp->sin_family = AF_INET;
 		toSetUp->sin_port = htons(hostPort);
-		bcopy(h->h_addr, (char*)&(toSetUp->sin_addr), h->h_length);
+		bcopy(remHost->h_addr, (char*)&(toSetUp->sin_addr), remHost->h_length);
 	}
 	else
 	{
@@ -129,7 +129,7 @@ int setUpConnection(struct sockaddr_in* toSetUp, int* fd, int mode, char* hostNa
 		remHost = gethostbyname(hostName);
 		toSetUp->sin_family = AF_INET;
 		toSetUp->sin_port = htons(hostPort);
-		bcopy(h->h_addr, (char*)&(toSetUp->sin_addr), h->h_length);
+		bcopy(remHost->h_addr, (char*)&(toSetUp->sin_addr), remHost->h_length);
 	}
 
 	return fd;
