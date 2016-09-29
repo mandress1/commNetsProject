@@ -15,7 +15,7 @@ char buff[SIZE];            // Because why not have global variables
 const char* SCHED_NAME = "c-lnx001.engr.uiowa.edu";
 const char* WEATH_NAME = "c-lnx000.engr.uiowa.edu";
 
-int setUpConnection(struct sockaddr_in* toSetUp, int mode, char* hostName, int hostPort);
+int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName, int hostPort);
 
 int main(int argc, char* argv[])
 {
@@ -38,16 +38,7 @@ int main(int argc, char* argv[])
 
     /* setting udp first ScheduleServer */
     printf("Setting up socket for UDP connection\n");
-    if((schedfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-        perror("Error: could not open socket for ScheduleServer\n");
-        exit(1);
-    }
-    printf("Socket opened for ScheduleServer\n");
-    h = gethostbyname(SCHED_NAME);                              // Getting ScheduleServer address
-    schedAddr.sin_family = AF_INET;                             // IPV4 woot woot
-    schedAddr.sin_port = htons(SCHED_PORT);                     // Look up top for it
-    bcopy(h->h_addr, (char*)&schedAddr.sin_addr, h->h_length);  // Telling socket address to listen for
+    schedfd = setUpConnection(&schedAddr, SOCK_DGRAM, SCHED_NAME, SCHED_PORT);
     printf("ScheduleServer socket set up\n");
 
     /* setting up WeatherServer */
@@ -100,7 +91,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-int setUpConnection(struct sockaddr_in* toSetUp, int mode, char* hostName, int hostPort)
+int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName, int hostPort)
 {
 	int fd = 0;
 	struct hostent* remHost;
@@ -130,6 +121,12 @@ int setUpConnection(struct sockaddr_in* toSetUp, int mode, char* hostName, int h
 		toSetUp->sin_family = AF_INET;
 		toSetUp->sin_port = htons(hostPort);
 		bcopy(remHost->h_addr, (char*)&(toSetUp->sin_addr), remHost->h_length);
+
+		if(connect(fd, (struct sockaddr*)toSetUp, sizeof(*toSetUp)) < 0)
+		{
+			perror("Unable to establish TCP connection with host\n");
+			exit(2);
+		}
 	}
 
 	return fd;
