@@ -15,6 +15,8 @@ char buff[SIZE];            // Because why not have global variables
 const char* SCHED_NAME = "c-lnx001.engr.uiowa.edu";
 const char* WEATH_NAME = "c-lnx000.engr.uiowa.edu";
 
+int setUpConnection(struct sockaddr_in* toSetUp, int mode, char* hostName, int hostPort);
+
 int main(int argc, char* argv[])
 {
     int schedfd;                    // ScheduleServer socket file descriptor
@@ -95,7 +97,40 @@ int main(int argc, char* argv[])
 
     close(weathfd);
     close(schedfd);
-
-
     return 0;
+}
+
+int setUpConnection(struct sockaddr_in* toSetUp, int* fd, int mode, char* hostName, int hostPort)
+{
+	int fd = 0;
+	struct hostent* remHost;
+
+	if(mode == SOCK_DGRAM)
+	{
+		if((fd = socket(AF_INET, mode, 0)) < 0)
+		{
+			perror("Error: unable to open socket for UDP communication\n");
+			exit(1);
+		}
+
+		remHost = gethostbyname(hostName);
+		toSetUp->sin_family = AF_INET;
+		toSetUp->sin_port = htons(hostPort);
+		bcopy(h->h_addr, (char*)&(toSetUp->sin_addr), h->h_length);
+	}
+	else
+	{
+		if((fd = socket(AF_INET, mode, 0)) < 0)
+		{
+			perror("Error: unable to open socket for TCP communication\n");
+			exit(1);
+		}
+
+		remHost = gethostbyname(hostName);
+		toSetUp->sin_family = AF_INET;
+		toSetUp->sin_port = htons(hostPort);
+		bcopy(h->h_addr, (char*)&(toSetUp->sin_addr), h->h_length);
+	}
+
+	return fd;
 }
