@@ -11,10 +11,10 @@
 #define SCHED_PORT 23510    // ScheduleServer port. host: c-lnx001.engr.uiowa.edu
 #define WEATH_PORT 23511    // WeatherServer port. host: c-lnx000.engr.uiowa.edu
 
-char buff[SIZE];            // Because why not have global variables
 const char* SCHED_NAME = "c-lnx001.engr.uiowa.edu";
 const char* WEATH_NAME = "c-lnx000.engr.uiowa.edu";
 
+int isValidSchoolName(const char* schoolName);
 int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName, int hostPort);
 
 int main(int argc, char* argv[])
@@ -22,11 +22,12 @@ int main(int argc, char* argv[])
     int schedfd;                    // ScheduleServer socket file descriptor
     int weathfd;                    // WeatherServer socket file descriptor
     int nread;
-    struct hostent* h;              // Used for getting servers
     struct sockaddr_in schedAddr;   // Socket for ScheduleServer
     struct sockaddr_in weathAddr;   // Socket for WeatherServer
     char* hawkid;
+    char* usrInput;
     char* msgToSend;
+    char* respBuff = (char*)malloc(SIZE*sizeof(char));
 
     if(argc < 2)
     {
@@ -43,48 +44,14 @@ int main(int argc, char* argv[])
 
     /* setting up WeatherServer */
     printf("Setting up socket for TCP connection\n");
-    if((weathfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        perror("Error: could not open socket fo WeatherServer\n");
-        exit(2);
-    }
-    printf("Socket opened for WeatherServer\n");
-    h = gethostbyname(WEATH_NAME);                              // Getting WeatherServer address
-    weathAddr.sin_family = AF_INET;                             // IPV4
-    weathAddr.sin_port = htons(WEATH_PORT);                     // at the top
-    bcopy(h->h_addr, (char*)&weathAddr.sin_addr, h->h_length);  // copy address
-    printf("WeatherServer socket set up\nTrying to connect\n");
-    if(connect(weathfd, (struct sockaddr*)&weathAddr, sizeof(weathAddr)) < 0)
-    {
-        perror("Couldn't set up connection to WeatherServer\n");
-        exit(3);
-    }
+    weathfd = setUpConnection(&weathAddr, SOCK_STREAM, WEATH_NAME, WEATH_PORT);
     printf("Connection made to WeatherServer\n");
 
-    /* sending messages */
-    printf("Sending mandress Iowa to ScheduleServer\n");
-    if(sendto(schedfd, "mandress Iowa", sizeof("mandress Iowa"), 0, (struct sockaddr*)&schedAddr, sizeof(schedAddr)) < 0)
+    do
     {
-        perror("Error: failed to send message to ScheduleServer\n");
-        exit(4);
-    }
-    printf("Message sent\nGetting response\n");
-    socklen_t addrlen = sizeof(schedAddr);
-    if((nread = recvfrom(schedfd, buff, SIZE, 0, (struct sockaddr*)&schedAddr, &addrlen)) < 0)
-    {
-        perror("Error: failed to get response from server\n");
-        exit(5);
-    }
-    buff[nread] = '\0';
-        printf("response: %s\n", buff);
+        printf("Enter a School name for weather forcast or \"quit\" to exit\nEntry: ");
 
-    printf("Sending mandress to WeatherServer\n");
-    write(weathfd, "mandress", sizeof("mandress"));
-    printf("Messgae sent\n");
-    nread = read(weathfd, buff, SIZE);
-    buff[nread] = '\0';
-    printf("WeatherServer response: %s\n", buff);
-
+    }while(strncmp(usrInput, "quit", strlen("quit")));
 
     close(weathfd);
     close(schedfd);
@@ -93,41 +60,46 @@ int main(int argc, char* argv[])
 
 int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName, int hostPort)
 {
-	int fd = 0;
-	struct hostent* remHost;
+    int fd = 0;
+    struct hostent* remHost;
 
-	if(mode == SOCK_DGRAM)
-	{
-		if((fd = socket(AF_INET, mode, 0)) < 0)
-		{
-			perror("Error: unable to open socket for UDP communication\n");
-			exit(1);
-		}
+    if(mode == SOCK_DGRAM)
+    {
+        if((fd = socket(AF_INET, mode, 0)) < 0)
+        {
+            perror("Error: unable to open socket for UDP communication\n");
+            exit(1);
+        }
 
-		remHost = gethostbyname(hostName);
-		toSetUp->sin_family = AF_INET;
-		toSetUp->sin_port = htons(hostPort);
-		bcopy(remHost->h_addr, (char*)&(toSetUp->sin_addr), remHost->h_length);
-	}
-	else
-	{
-		if((fd = socket(AF_INET, mode, 0)) < 0)
-		{
-			perror("Error: unable to open socket for TCP communication\n");
-			exit(1);
-		}
+        remHost = gethostbyname(hostName);
+        toSetUp->sin_family = AF_INET;
+        toSetUp->sin_port = htons(hostPort);
+        bcopy(remHost->h_addr, (char*)&(toSetUp->sin_addr), remHost->h_length);
+    }
+    else
+    {
+        if((fd = socket(AF_INET, mode, 0)) < 0)
+        {
+            perror("Error: unable to open socket for TCP communication\n");
+            exit(1);
+        }
 
-		remHost = gethostbyname(hostName);
-		toSetUp->sin_family = AF_INET;
-		toSetUp->sin_port = htons(hostPort);
-		bcopy(remHost->h_addr, (char*)&(toSetUp->sin_addr), remHost->h_length);
+        remHost = gethostbyname(hostName);
+        toSetUp->sin_family = AF_INET;
+        toSetUp->sin_port = htons(hostPort);
+        bcopy(remHost->h_addr, (char*)&(toSetUp->sin_addr), remHost->h_length);
 
-		if(connect(fd, (struct sockaddr*)toSetUp, sizeof(*toSetUp)) < 0)
-		{
-			perror("Unable to establish TCP connection with host\n");
-			exit(2);
-		}
-	}
+        if(connect(fd, (struct sockaddr*)toSetUp, sizeof(*toSetUp)) < 0)
+        {
+            perror("Unable to establish TCP connection with host\n");
+            exit(2);
+        }
+    }
 
-	return fd;
+    return fd;
+}
+
+int isValidSchoolName(const char* schoolName)
+{
+    
 }
