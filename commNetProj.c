@@ -7,16 +7,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#define CONF_SIZE 14
-#define OUT_BUFF_SIZE 256
-#define IN_BUFF_SIZE 16384     // buffer size
-#define SCHED_PORT 23510    // ScheduleServer port. host: c-lnx001.engr.uiowa.edu
-#define WEATH_PORT 23511    // WeatherServer port. host: c-lnx000.engr.uiowa.edu
+#define CONF_SIZE       14
+#define SCHED_PORT      23510    // ScheduleServer port. host: c-lnx001.engr.uiowa.edu
+#define WEATH_PORT      23511    // WeatherServer port. host: c-lnx000.engr.uiowa.edu
+#define IN_BUFF_SIZE    16384     // buffer size
+#define OUT_BUFF_SIZE   256
+
 
 const char* SCHED_NAME = "c-lnx001.engr.uiowa.edu";
 const char* WEATH_NAME = "c-lnx000.engr.uiowa.edu";
 const char* SCHOOLS[] = {"Michigan","Indiana","Illinois","Maryland","Ohio_State","Northwestern","Iowa","Purdue","Michigan_State","Nebraska","Wisconsin","Minnesota","Rutgers","Penn_State"};
-
 
 
 int min(int one, int two);
@@ -26,6 +26,7 @@ char* remNull(char* str);
 
 int main(int argc, char* argv[])
 {
+    int i;
     int schedfd;                    // ScheduleServer socket file descriptor
     int weathfd;                    // WeatherServer socket file descriptor
     int nread;
@@ -40,9 +41,13 @@ int main(int argc, char* argv[])
     if(argc < 2)
     {
         perror("Error: not enough arguments supplied.\nUsage: `./<executable_name>.exe <hawkid>\n");
-        exit(-1);
+        exit(1);
     }
 
+    for(i = 0;i < strlen(argv[1]);i++)
+    {
+        usrInput[i] = argv[1][i];
+    }
     hawkid = argv[1];
 
     /* setting udp first ScheduleServer */
@@ -56,17 +61,22 @@ int main(int argc, char* argv[])
     weathfd = setUpConnection(&weathAddr, SOCK_STREAM, WEATH_NAME, WEATH_PORT);
     printf("Connection made to WeatherServer\n");
 
-    write(weathfd, remNull(hawkid), sizeof(hawkid));
+    write(weathfd, remNull(hawkid), sizeof(remNull(hawkid)));
     printf("'%s' sent to WeatherServer\n", argv[1]);
     nread = read(weathfd, respBuff, IN_BUFF_SIZE);
     respBuff[nread] = '\0';
     printf("WeatherServer says: '%s'\n", respBuff);
-
     
-    do
+
+    while(strncmp(usrInput, "quit", min(strlen(usrInput), strlen("quit"))))
     {
+        bzero(usrInput, OUT_BUFF_SIZE);
+        bzero(respBuff, IN_BUFF_SIZE);
+        bzero(outBuff, OUT_BUFF_SIZE);
+
         printf("Enter a School name for weather forcast or \"quit\" to exit\nEntry: ");
         scanf("%s", usrInput);
+        printf("after\n");
 
         if(isValidSchoolName(usrInput, SCHOOLS, CONF_SIZE))
         {
@@ -75,11 +85,11 @@ int main(int argc, char* argv[])
             int idLen = strlen(hawkid);
             int inLen = strlen(usrInput);
             int totLen = idLen + inLen + 1;
+
             for(i = 0;i < idLen;i++)
             {
                 outBuff[i] = hawkid[i];
             }
-            printf("wow\n");
             outBuff[idLen] = ' ';
             for(i = 0;i < inLen;i++)
             {
@@ -102,11 +112,12 @@ int main(int argc, char* argv[])
             write(weathfd, outBuff, j);
             outBuff[j] = '\0';
             printf("'%s' sent to WeatherServer\n", outBuff);
-
+            sleep(1);
             // print weather server response
             nread = read(weathfd, respBuff, IN_BUFF_SIZE);
             respBuff[nread] = '\0';
             printf("WeatherServer says: %s\n", respBuff);
+            printf(" \n");
         }
         else if(strncmp(usrInput, "quit", min(strlen(usrInput), strlen("quit"))) == 0)
         {
@@ -123,7 +134,8 @@ int main(int argc, char* argv[])
         {
             printf("Error: input nor recognized.\nAll spaces must be underscores ('_') and school names must be correctly capitalized\n");
         }
-    }while(strncmp(usrInput, "quit", min(strlen(usrInput), strlen("quit"))));
+        
+    }
     
 
 
@@ -142,7 +154,7 @@ int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName,
         if((fd = socket(AF_INET, mode, 0)) < 0)
         {
             perror("Error: unable to open socket for UDP communication\n");
-            exit(1);
+            exit(2);
         }
 
         remHost = gethostbyname(hostName);
@@ -155,7 +167,7 @@ int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName,
         if((fd = socket(AF_INET, mode, 0)) < 0)
         {
             perror("Error: unable to open socket for TCP communication\n");
-            exit(1);
+            exit(2);
         }
 
         remHost = gethostbyname(hostName);
@@ -166,7 +178,7 @@ int setUpConnection(struct sockaddr_in* toSetUp, int mode, const char* hostName,
         if(connect(fd, (struct sockaddr*)toSetUp, sizeof(*toSetUp)) < 0)
         {
             perror("Unable to establish TCP connection with host\n");
-            exit(2);
+            exit(3);
         }
     }
 
@@ -195,20 +207,12 @@ int min(int one, int two)
 char* remNull(char* str)
 {
     int ogLen = strlen(str), i;
+    char* newStr = (char*)malloc(ogLen*sizeof(char));
 
-    if(str[ogLen] != '\0')
+    for(i = 0;i < ogLen;i++)
     {
-        char* newStr = (char*)malloc(ogLen*sizeof(char));
-
-        for(i = 0;i < ogLen;i++)
-        {
-            newStr[i] = str[i];
-        }
-
-        return newStr;  
+        newStr[i] = str[i];
     }
-    else
-    {
-        return str;
-    }
+
+    return newStr;  
 }
